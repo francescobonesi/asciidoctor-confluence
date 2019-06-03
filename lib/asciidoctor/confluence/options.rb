@@ -12,7 +12,7 @@ module Asciidoctor
 
       def initialize(options = {})
         super options
-        self[:confluence] = options[:confluence] || {:update => false}
+        self[:confluence] = options[:confluence] || {:update => false, :update_images => false}
         self[:confluence][:auth] = {} if self[:confluence][:auth].nil?
       end
 
@@ -54,12 +54,24 @@ Usage: asciidoctor-confluence --host HOSTNAME --spaceKey SPACEKEY --title TITLE 
             self[:confluence][:update] = true
           end
 
-          opts.on('--username USERNAME', 'the username used if credential are need to create the page') do |spaceKey|
-            self[:confluence][:auth][:username] = spaceKey
+          opts.on('--images IMAGES', 'indicates images path to be loaded as attachments') do |images|
+            if images != 'NO-IMAGES'
+              self[:confluence][:images] = images
+            else
+              self[:confluence][:images] = ''
+            end
           end
 
-          opts.on('--password PASSWORD', 'the password used if credential are need to create the page') do |spaceKey|
-            self[:confluence][:auth][:password] = spaceKey
+          opts.on('--username USERNAME', 'the username used if credential are need to create the page') do |username|
+            self[:confluence][:auth][:username] = username
+          end
+
+          opts.on('--password PASSWORD', 'the password used if credential are need to create the page') do |password|
+            self[:confluence][:auth][:password] = password
+          end
+          
+          opts.on('--what TYPE', 'indicates what to publish') do |type|
+            self[:confluence][:type] = type
           end
 
           opts.on_tail('-h', '--help', 'Show the full helper (including Asciidoctor helper)') do

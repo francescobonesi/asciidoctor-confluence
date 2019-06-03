@@ -1,0 +1,94 @@
+== Test
+
+ciao
+
+=== Subtest
+
+ciao ciao
+
+.subtitle
+[plantuml, sequence-diagram, png]
+....
+ZuulDxl -> InvoicesJourney: GET /api/v3/invoices or /api/v3/invoices/{invoiceId}
+
+InvoicesJourney -> InvoicesJourney: extract customerCode from session
+
+== IF customerCode not found and fallbackRetrieval enabled ==
+
+InvoicesJourney -> ConsumerBe: retrieve customerCode
+ConsumerBe -> InvoicesJourney: customerCode
+
+== END IF ==
+
+== IF customerCode null ==
+
+InvoicesJourney -> ZuulDxl: 560 integration error, customerCode not found
+
+== END IF ==
+
+note right InvoicesJourney
+The customerCode has been found
+end note
+
+InvoicesJourney -> CustomerBillManagement: GET /customerBill?customerCode=<customerCode>
+
+CustomerBillManagement -> InvoicesJourney: return list of invoices
+
+InvoicesJourney -> InvoicesJourney: extract <invoiceId> if requested
+note right InvoicesJourney
+if invoiceId==last,
+the last invoice is returned
+end note
+
+InvoicesJourney -> ZuulDxl: return single invoice or list of invoices
+....
+
+.x
+[plantuml, component-fallback-flow, png]
+....
+skinparam database {
+    BorderColor black
+    BackgroundColor FireBrick
+    FontName Courier
+    FontSize 13
+    FontColor white
+    BackgroundColor<<consul>> Thistle
+    FontColor<<consul>> black
+}
+
+skinparam node {
+    BorderColor black
+    FontName Courier
+    FontSize 13
+    BackgroundColor gold
+}
+
+skinparam folder {
+    BorderColor black
+    FontName Courier
+    FontSize 13
+    BackgroundColor gold
+    BackgroundColor<<green>> MediumSpringGreen
+}
+
+skinparam component {
+  FontName Courier
+  FontSize 13
+  BorderColor black
+  BackgroundColor khaki
+  BackgroundColor<<green>> MediumSpringGreen
+  ArrowColor #FF6655
+  ArrowFontColor #777777
+}
+
+
+interface REST
+
+REST -- [JourneyInvoices]
+
+JourneyInvoices-->[ConsumerBe]
+JourneyInvoices-->[CustomerBillManagement]
+JourneyInvoices-->[AEM]
+....
+
+== end

@@ -4,15 +4,16 @@ module Asciidoctor
 
       DEFAULT_CONTENT_TYPE = 'application/json'
       API_CONTENT = 'rest/api/content'
+      MULTIPART_CONTENT_TYPE = 'multipart/form-data; boundary=-----------RubyMultipartPost'
 
       attr_reader :url
       @page
       @auth
 
-      def initialize(confluence_options, page)
+      def initialize(confluence_options, page = nil)
         @url = build_api_content_url(confluence_options)
         @auth = confluence_options[:auth] unless confluence_options[:auth].nil?
-        @page = page
+        @page = page unless page.nil?
       end
 
       def build_api_content_url(confluence_options)
@@ -23,6 +24,17 @@ module Asciidoctor
 
       def create_connection
         conn = Faraday.new do |faraday|
+          faraday.request :url_encoded
+          faraday.adapter Faraday.default_adapter
+        end
+
+        conn.basic_auth(@auth[:username], @auth[:password]) unless @auth.nil?
+        conn
+      end
+
+      def create_form_connection
+        conn = Faraday.new do |faraday|
+          faraday.request :multipart
           faraday.request :url_encoded
           faraday.adapter Faraday.default_adapter
         end
@@ -94,6 +106,31 @@ module Asciidoctor
           req.headers['Content-Type'] = DEFAULT_CONTENT_TYPE
         end
       end
+
+      def create_attachment(page_id, image_file)
+        conn = create_form_connection
+        payload = { :file => Faraday::UploadIO.new(image_file, 'image/jpeg') }
+
+        conn.post do |req|
+          req.url "#{@url}/#{page_id}/child/attachment"
+          req.headers['Content-Type'] = MULTIPART_CONTENT_TYPE
+          req.headers['X-Atlassian-Token'] = 'no-check'
+          req.body = payload
+        end
+      end
+
+      def update_attachment(page_id, image_file)
+        conn = create_form_connection
+        payload = { :file => Faraday::UploadIO.new(image_file, 'image/jpeg') }
+
+        conn.put do |req|
+          req.url "#{@url}/#{page_id}/child/attachment"
+          req.headers['Content-Type'] = MULTIPART_CONTENT_TYPE
+          req.headers['X-Atlassian-Token'] = 'no-check'
+          req.body = payload
+        end
+      end
+      
     end
   end
 end
